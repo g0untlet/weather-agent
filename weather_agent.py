@@ -1,55 +1,59 @@
 import os
-import requests
 from dotenv import load_dotenv
 from langchain_anthropic import ChatAnthropic
-from langchain.agents import create_agent
-from langchain_core.tools import tool
+from langgraph.prebuilt import ToolNode
+from langgraph.graph import StateGraph, MessagesState, START, END
 from langgraph.checkpoint.memory import MemorySaver
 
-# --- 1. AUTHENTIFIZIERUNG (WICHTIG!) ---
-dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
-load_dotenv(dotenv_path)
-api_key = os.getenv("ANTHROPIC_API_KEY")
+# Dein Tool importieren
+from weather_tools import get_detailed_weather
 
-# --- 2. TOOL DEFINITION ---
-@tool
-def get_real_weather(city: str):
-    """Gibt die aktuelle Temperatur für München zurück."""
-    url = "https://api.open-meteo.com/v1/forecast?latitude=48.13&longitude=11.57&current_weather=true"
-    res = requests.get(url).json()
-    temp = res['current_weather']['temperature']
-    return f"In {city} sind es aktuell {temp}°C."
+load_dotenv()
 
-# --- 3. AGENT SETUP MIT KEY UND MEMORY ---
-# Hier wird der Key explizit an das Modell übergeben
-llm = ChatAnthropic(
-    model="claude-3-haiku-20240307", 
-    temperature=0,
-    api_key=api_key 
-)
+# 1. LLM mit Tool-Bindung
+llm = ChatAnthropic(model="claude-3-haiku-20240307", api_key=os.getenv("ANTHROPIC_API_KEY"))
+llm_with_tools = llm.bind_tools([get_detailed_weather])
 
+# 2. Definition der Logik-Knoten (Nodes)
+def call_model(state: MessagesState):
+    messages = state['messages']
+    # System Prompt hinzufügen (optional, aber sauberer)
+    system_message = {"role": "system", "content": "Du bist ein Butler. Antworte kurz."}
+    response = llm_with_tools.invoke([system_message] + messages)
+    return {"messages": [response]}
+
+# 3. Den Graph bauen
+workflow = StateGraph(MessagesState)
+
+# Knoten hinzufügen
+workflow.add_node("agent", call_model)
+workflow.add_node("tools", ToolNode([get_detailed_weather]))
+
+# Kanten (Edges) definieren
+workflow.add_edge(START, "agent")
+
+# Bedingte Kante: Soll das Tool aufgerufen werden oder sind wir fertig?
+def should_continue(state: MessagesState):
+    last_message = state['messages'][-1]
+    if last_message.tool_calls:
+        return "tools"
+    return END
+
+workflow.add_conditional_edges("agent", should_continue)
+workflow.add_edge("tools", "agent")
+
+# 4. Kompilieren mit Memory
 memory = MemorySaver()
+app = workflow.compile(checkpointer=memory)
 
-agent = create_agent(
-    model=llm,
-    tools=[get_real_weather],
-    checkpointer=memory,
-    system_prompt="Du bist ein Butler. Antworte kurz."
-)
-
-# --- 4. EXECUTION MIT VERBESSERTEM LOGGING ---
-config = {"configurable": {"thread_id": "session_muenchen_001"}}
+# --- Ausführung ---
+config = {"configurable": {"thread_id": "butler_session_1"}}
 
 def ask_butler(query):
     print(f"\nUser: {query}")
-    response = agent.invoke({"messages": [("user", query)]}, config=config)
-    
-    # Wir suchen die letzte Nachricht, die wirklich Text enthält
-    for msg in reversed(response["messages"]):
-        if msg.content:
-            print(f"Butler: {msg.content}")
-            break
+    inputs = {"messages": [("user", query)]}
+    output = app.invoke(inputs, config=config)
+    print(f"Butler: {output['messages'][-1].content}")
 
-ask_butler("Wie ist das Wetter in München?")
-ask_butler("Und brauche ich dort eine Jacke?")
+ask_butler("Wie ist das Wetter in Hamburg?")
 
