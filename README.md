@@ -31,9 +31,9 @@ The application uses a decoupled architecture to ensure scalability (e.g., conne
 # Install dependencies
 pip install -r requirements.txt
 
-# Ensure .env contains:
-# ANTHROPIC_API_KEY=your_key
+Ensure .env contains: ANTHROPIC_API_KEY=your_key
 
+### 2. Run
 ```bash
 uvicorn api_server:app --reload --port 8000
 streamlit run weather_gui.py
