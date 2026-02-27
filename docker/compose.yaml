@@ -3,6 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    image: ghcr.io/g0untlet/weather-agent:0.0.2
     container_name: johann-api
     ports:
       - "8000:8000"
