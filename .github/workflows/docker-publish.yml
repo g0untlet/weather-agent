@@ -3,6 +3,7 @@ name: Docker Build and Publish
 on:
   push:
     branches: [ "main" ] # Oder "master", je nach deinem Default-Branch
+    tags: [ 'v*' ] # Reagiert auf alle Tags, die mit 'v' beginnen
 
 env:
   REGISTRY: ghcr.io
