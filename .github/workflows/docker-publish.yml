@@ -1,8 +1,9 @@
 name: Docker Build and Publish
 
 on:
+  workflow_dispatch: # Erlaubt den manuellen Start via Button
   push:
-    branches: [ "main" ] # Oder "master", je nach deinem Default-Branch
+    # branches: [ "main" ] # Reagiert auf Push nach main
     tags: [ 'v*' ] # Reagiert auf alle Tags, die mit 'v' beginnen
 
 env:
