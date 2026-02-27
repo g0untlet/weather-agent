@@ -1,10 +1,19 @@
 name: Docker Build and Publish
 
 on:
-  workflow_dispatch: # Erlaubt den manuellen Start via Button
   push:
-    # branches: [ "main" ] # Reagiert auf Push nach main
-    tags: [ 'v*' ] # Reagiert auf alle Tags, die mit 'v' beginnen
+    tags: [ 'v*' ] # Automatisch bei jedem Versions-Tag
+    # branches: [ "main" ] 
+  workflow_dispatch: # Manuelle Steuerung
+    inputs:
+      image_type:
+        description: 'Welcher Image-Typ soll gebaut werden?'
+        required: true
+        default: 'test'
+        type: choice
+        options:
+          - test
+          - stable
 
 env:
   REGISTRY: ghcr.io
@@ -34,19 +43,19 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            # Taggt das Image als 'latest' bei jedem Push auf den Main-Branch
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
-            # Taggt das Image mit der Git-Tag-Nummer (z.B. v1.0.2), falls vorhanden
-            type=semver,pattern={{version}}
-            # Taggt das Image mit dem SHA-Hash (für Traceability)
+            # Wenn manuell gestartet, nutze den gewählten Typ (test/stable)
+            type=raw,value=${{ github.event.inputs.image_type }},enable=${{ github.event_name == 'workflow_dispatch' }}
+            # Wenn durch einen Tag ausgelöst, nutze die Versionsnummer und 'latest'
+            type=semver,pattern={{version}},enable=${{ github.event_name == 'push' }}
+            type=raw,value=latest,enable=${{ github.event_name == 'push' }}
+            # SHA immer als Backup hinzufügen
             type=sha
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./docker/Dockerfile
+          file: ./Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          
