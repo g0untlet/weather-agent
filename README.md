@@ -35,19 +35,23 @@ Ensure .env contains: ANTHROPIC_API_KEY=your_key
 
 # create git tag to trigger gh action
 git tag -a v0.1.0 -m "Release 0.1.0"
-git push origin v0.1.0
+git push origin v0.1.0  
+``` 
 
 ### 2. Run Backend
 ```bash
 Standalone: uvicorn api_server:app --reload --port 8000
 Docker: docker compose up -d
+``` 
 
 ### 3. Run Frontend
 ```bash
 streamlit run weather_gui.py
+``` 
 
 ### 3. Test Backend Agent if running in docker
 ```bash
 curl -X POST http://localhost:8000/chat -H "Content-Type: application/json" -d '{"message": "Wie ist das Wetter in München?"}'
+``` 
 
 
