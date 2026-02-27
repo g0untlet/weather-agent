@@ -1,10 +1,10 @@
 services:
-  johann-backend:
+  weather-agent:
     build:
       context: .
       dockerfile: Dockerfile
-    image: ghcr.io/g0untlet/weather-agent:0.0.2
-    container_name: johann-api
+    image: ghcr.io/g0untlet/weather-agent:0.1.0
+    container_name: weather-agent
     ports:
       - "8000:8000"
     env_file:
@@ -15,7 +15,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-
+  
   # Optional: Falls du die GUI auch containerisieren willst
   # johann-gui:
   #   build:
