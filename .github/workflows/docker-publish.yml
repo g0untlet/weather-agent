@@ -32,7 +32,11 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=latest
+            # Taggt das Image als 'latest' bei jedem Push auf den Main-Branch
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            # Taggt das Image mit der Git-Tag-Nummer (z.B. v1.0.2), falls vorhanden
+            type=semver,pattern={{version}}
+            # Taggt das Image mit dem SHA-Hash (für Traceability)
             type=sha
 
       - name: Build and push Docker image
@@ -41,6 +45,6 @@ jobs:
           context: .
           file: ./docker/Dockerfile
           push: true
-          tags: ${{ id.meta.outputs.tags }}
-          labels: ${{ id.meta.outputs.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           
