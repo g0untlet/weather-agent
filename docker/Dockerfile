@@ -1,17 +1,19 @@
-# Nutzen eines schlanken Python-Images für minimale Image-Größe
 FROM python:3.11-slim
 
-# Arbeitsverzeichnis im Container
+# Arbeitsverzeichnis setzen
 WORKDIR /app
 
-# System-Abhängigkeiten installieren
+# System-Abhängigkeiten (falls nötig für manche Python-Pakete)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Abhängigkeiten kopieren und installieren
+# Zuerst nur requirements kopieren (besseres Caching)
 COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+
+# Upgrade pip und installiere Abhängigkeiten
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt
 
 # Nur die notwendigen Backend-Skripte kopieren
 COPY api_server.py .
