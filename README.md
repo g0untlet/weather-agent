@@ -16,11 +16,23 @@ A decoupled AI Agent system using **FastAPI** as the backend service and **Strea
 
 ---
 
-## 🛠 Architecture
+## 🏗 Architektur
 
-The application uses a decoupled architecture to ensure scalability (e.g., connecting a Mobile App or Home Assistant later).
-
-
+```mermaid
+graph TD
+    User((Nutzer)) --> GUI[Streamlit Frontend]
+    GUI -->|HTTP REST /chat| API[FastAPI Backend]
+    
+    subgraph "Docker Container (Johann)"
+    API --> Agent[LangGraph Agent]
+    Agent --> Tools[Weather Tools]
+    end
+    
+    Tools -->|API Call| WeatherAPI[OpenWeather/Apple Weather]
+    Agent -->|Prompt| LLM[Anthropic Claude]
+    
+    style GUI fill:#f9f,stroke:#333,stroke-width:2px
+    style API fill:#bbf,stroke:#333,stroke-width:2px
 
 ---
 
